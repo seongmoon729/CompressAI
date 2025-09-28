@@ -91,27 +91,28 @@ class CompressionModel(nn.Module):
                 stacklevel=2,
             )
 
-    def load_state_dict(self, state_dict, strict=True):
+    def load_state_dict(self, state_dict, strict=True, update_buffers=True):
         for name, module in self.named_modules():
             if not any(x.startswith(name) for x in state_dict.keys()):
                 continue
 
-            if isinstance(module, EntropyBottleneck):
-                update_registered_buffers(
-                    module,
-                    name,
-                    ["_quantized_cdf", "_offset", "_cdf_length"],
-                    state_dict,
-                )
-                state_dict = remap_old_keys(name, state_dict)
-
-            if isinstance(module, GaussianConditional):
-                update_registered_buffers(
-                    module,
-                    name,
-                    ["_quantized_cdf", "_offset", "_cdf_length", "scale_table"],
-                    state_dict,
-                )
+            if update_buffers:
+                if isinstance(module, EntropyBottleneck):
+                    update_registered_buffers(
+                        module,
+                        name,
+                        ["_quantized_cdf", "_offset", "_cdf_length"],
+                        state_dict,
+                    )
+                    state_dict = remap_old_keys(name, state_dict)
+    
+                if isinstance(module, GaussianConditional):
+                    update_registered_buffers(
+                        module,
+                        name,
+                        ["_quantized_cdf", "_offset", "_cdf_length", "scale_table"],
+                        state_dict,
+                    )
 
         return nn.Module.load_state_dict(self, state_dict, strict=strict)
 
